@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Placement Prediction Result</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        .result-box {
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 10px;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .placed {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: #155724;
+        }
+        
+        .not-placed {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #721c24;
+        }
+        
+        .status {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .probability {
+            font-size: 20px;
+            margin-top: 15px;
+        }
+        
+        .details {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: left;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .detail-value {
+            color: #333;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            {% if placement_status == "Placed" %}🎉{% else %}😔{% endif %}
+        </div>
+        
+        <div class="result-box {% if placement_status == 'Placed' %}placed{% else %}not-placed{% endif %}">
+            <div class="status">
+                {{ placement_status }}
+            </div>
+            {% if probability %}
+            <div class="probability">
+                Probability: {{ probability }}%
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="details">
+            <h3>📊 Your Details Summary</h3>
+            <div class="detail-item">
+                <span class="detail-label">Degree Percentage (CGPA):</span>
+                <span class="detail-value">{{ cgpa }}%</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Aptitude Test Score:</span>
+                <span class="detail-value">{{ aptitude_score }}%</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Skill Score:</span>
+                <span class="detail-value">{{ skill_score }}/100</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Internships:</span>
+                <span class="detail-value">{{ internship }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Work Experience:</span>
+                <span class="detail-value">{{ work_experience }}</span>
+            </div>
+        </div>
+        
+        <a href="{% url 'home' %}" class="button">🔙 Check Another Student</a>
+    </div>
+</body>
+</html>

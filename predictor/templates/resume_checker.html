@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Score Checker</title>
+    <style>
+        .resume-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 80px auto;
+            max-width: 600px;
+        }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(#1e3c72 0deg, #e0e0e0 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="resume-container">
+            <h3>Resume Score Checker</h3>
+            <textarea id="resumeText" rows="10" class="form-control" 
+                placeholder="Paste your resume content here..."></textarea>
+            <button class="btn btn-primary mt-3" onclick="checkResume()">
+                Check Score
+            </button>
+            <div id="scoreResult" class="mt-4"></div>
+        </div>
+    </div>
+    
+    <script>
+        function checkResume() {
+            const text = document.getElementById('resumeText').value;
+            let score = 0;
+            
+            // Keywords to check
+            const keywords = {
+                'project': 10, 'internship': 10, 'skills': 10,
+                'achievement': 10, 'certification': 10, 'experience': 10,
+                'education': 5, 'leadership': 5, 'team': 5
+            };
+            
+            for (const [keyword, points] of Object.entries(keywords)) {
+                if (text.toLowerCase().includes(keyword)) {
+                    score += points;
+                }
+            }
+            
+            const result = `
+                <div class="score-circle">
+                    <h2>${score}%</h2>
+                </div>
+                <h5>Resume Score: ${score}%</h5>
+                ${score < 50 ? '<p class="text-danger">Needs improvement! Add projects and skills.</p>' : 
+                  score < 70 ? '<p class="text-warning">Good! Add more achievements.</p>' :
+                  '<p class="text-success">Excellent resume! Ready for top companies.</p>'}
+            `;
+            
+            document.getElementById('scoreResult').innerHTML = result;
+        }
+    </script>
+</body>
+</html>

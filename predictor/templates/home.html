@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placement Prediction - Smart Career Guidance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/animations.css' %}">
+    <style>
+        /* Same styles as before */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #1e3c72 !important;
+            font-size: 1.5rem;
+        }
+        
+        .nav-link {
+            color: #555 !important;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: #1e3c72 !important;
+            transform: translateY(-2px);
+        }
+        
+        /* Logout button specific */
+        .logout-form {
+            display: inline;
+        }
+        
+        .logout-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        
+        .logout-btn:hover {
+            color: #1e3c72 !important;
+            transform: translateY(-2px);
+        }
+        
+        .dropdown-menu {
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: none;
+        }
+        
+        .dropdown-item:hover {
+            background: #e8f0fe;
+            color: #1e3c72;
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            padding: 35px;
+            margin: 90px auto 40px;
+            max-width: 1000px;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #1e3c72;
+            display: inline-block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px 12px;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 0.2rem rgba(30,60,114,0.1);
+        }
+        
+        .btn-predict {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30,60,114,0.3);
+        }
+        
+        .modal-result {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+            margin: 20px;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .result-icon {
+            font-size: 70px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .result-status {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .result-probability {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .placed-bg {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+        }
+        
+        .not-placed-bg {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+        }
+        
+        .recommendations {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .recommendation-item {
+            padding: 10px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #1e3c72;
+            font-size: 14px;
+        }
+        
+        .student-summary {
+            background: #e8f0fe;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 20px;
+                margin: 80px 15px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar with Fixed Logout -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-graduation-cap"></i> Placement Predictor
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/home/"><i class="fas fa-home"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about/"><i class="fas fa-info-circle"></i> About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/compare/"><i class="fas fa-balance-scale"></i> Compare</a>
+                    </li>
+                    
+                    <!-- Export Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="exportDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-download"></i> Export
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/download-report/">
+                                <i class="fas fa-file-pdf"></i> Download PDF Report
+                            </a></li>
+                            <li><a class="dropdown-item" href="/export-excel/">
+                                <i class="fas fa-file-excel"></i> Export to Excel
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="shareCurrentResult()">
+                                <i class="fas fa-share-alt"></i> Share Results
+                            </a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Fixed Logout Button with POST method -->
+                    <li class="nav-item">
+                        <form action="{% url 'logout' %}" method="post" class="logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-link logout-btn">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Rest of your form remains same -->
+    <div class="container">
+        <div class="form-container">
+            <h3 class="text-center mb-4" style="color: #1e3c72;">
+                <i class="fas fa-chart-line"></i> Placement Prediction Form
+            </h3>
+            
+            <form id="predictionForm">
+                {% csrf_token %}
+                
+                <!-- Personal Information -->
+                <h5 class="section-title"><i class="fas fa-user-graduate"></i> Personal Information</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Gender *</label>
+                            <select name="gender" class="form-select" required>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">10th Board *</label>
+                            <select name="hs_b" class="form-select" required>
+                                <option value="Central">Central Board (CBSE/ICSE)</option>
+                                <option value="Others">State Board / Others</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">10th Percentage *</label>
+                            <input type="number" step="0.01" name="hs_p" class="form-control" required placeholder="e.g., 85.5">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">12th Board *</label>
+                            <select name="12_b" class="form-select" required>
+                                <option value="Central">Central Board (CBSE/ICSE)</option>
+                                <option value="Others">State Board / Others</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Academic Information -->
+                <h5 class="section-title mt-4"><i class="fas fa-book-open"></i> Academic Information</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">12th Percentage *</label>
+                            <input type="number" step="0.01" name="12_p" class="form-control" required placeholder="e.g., 75.0">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">12th Stream *</label>
+                            <select name="12_s" class="form-select" required>
+                                <option value="Commerce">Commerce</option>
+                                <option value="Science">Science</option>
+                                <option value="Arts">Arts</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Degree Percentage (CGPA) *</label>
+                            <input type="number" step="0.01" name="degree_p" class="form-control" required placeholder="e.g., 65.0">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Degree Type *</label>
+                            <select name="degree_t" class="form-select" required>
+                                <option value="Sci&Tech">Science & Technology</option>
+                                <option value="Comm&Mgmt">Commerce & Management</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Professional Information -->
+                <h5 class="section-title mt-4"><i class="fas fa-briefcase"></i> Professional Information</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Work Experience *</label>
+                            <select name="workex" class="form-select" required>
+                                <option value="No">No Experience</option>
+                                <option value="Yes">Has Experience</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">E-Test Percentage *</label>
+                            <input type="number" step="0.01" name="etest_p" class="form-control" required placeholder="e.g., 75.0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Final Year Percentage *</label>
+                            <input type="number" step="0.01" name="final_year_p" class="form-control" required placeholder="e.g., 65.0">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Course *</label>
+                            <select name="course" class="form-select" required>
+                                <option value="B.Tech">B.Tech</option>
+                                <option value="BCA">BCA</option>
+                                <option value="MCA">MCA</option>
+                                <option value="MBA">MBA</option>
+                                <option value="Pharmacy">Pharmacy</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Course Specialization *</label>
+                            <select name="course_specialization" class="form-select" required>
+                                <option value="CSE">Computer Science (CSE)</option>
+                                <option value="ECE">Electronics (ECE)</option>
+                                <option value="IT">Information Technology</option>
+                                <option value="Web Dev">Web Development</option>
+                                <option value="App Dev">App Development</option>
+                                <option value="Data Science">Data Science</option>
+                                <option value="Software">Software Engineering</option>
+                                <option value="Finance">Finance</option>
+                                <option value="HR">Human Resources</option>
+                                <option value="Pharmacology">Pharmacology</option>
+                                <option value="Clinical Research">Clinical Research</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Skill Score (out of 100) *</label>
+                            <input type="number" step="1" name="skill_score" class="form-control" required placeholder="e.g., 75">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Number of Internships *</label>
+                    <input type="number" name="internship" class="form-control" required min="0" max="10" placeholder="e.g., 1">
+                </div>
+                
+                <button type="submit" class="btn-predict">
+                    <i class="fas fa-chart-line"></i> Predict My Placement
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-animation">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        <p style="color: white; margin-top: 20px;">Analyzing your profile...</p>
+    </div>
+    
+    <!-- Result Modal -->
+    <div class="modal-result" id="resultModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let latestResult = null;
+        
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => { data[key] = value; });
+            
+            try {
+                const response = await fetch('/predict/api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    latestResult = result;
+                    showResult(result);
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        });
+        
+        function showResult(data) {
+            const isPlaced = data.placement_status === 'Placed';
+            const icon = isPlaced ? '🎉' : '😔';
+            const bgClass = isPlaced ? 'placed-bg' : 'not-placed-bg';
+            
+            let recommendationsHtml = '';
+            if (data.recommendations && data.recommendations.length > 0) {
+                recommendationsHtml = '<div class="recommendations"><strong>📝 Personalized Recommendations:</strong>';
+                data.recommendations.forEach(rec => {
+                    recommendationsHtml += `<div class="recommendation-item">${rec}</div>`;
+                });
+                recommendationsHtml += '</div>';
+            }
+            
+            const html = `
+                <div class="result-icon">${icon}</div>
+                <div class="result-status">${data.placement_status}</div>
+                <div class="result-probability ${bgClass}">
+                    <strong>Success Probability: ${data.probability}%</strong>
+                </div>
+                <div class="student-summary">
+                    <strong>📊 Your Profile Summary:</strong>
+                    <p>CGPA: ${data.student_data.cgpa}%</p>
+                    <p>Aptitude: ${data.student_data.aptitude_score}%</p>
+                    <p>Skills: ${data.student_data.skill_score}/100</p>
+                    <p>Internships: ${data.student_data.internship}</p>
+                </div>
+                ${recommendationsHtml}
+                <button class="btn-predict mt-3" onclick="closeModal()">Close</button>
+            `;
+            
+            document.getElementById('resultContent').innerHTML = html;
+            document.getElementById('resultModal').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+        
+        function shareCurrentResult() {
+            if (latestResult) {
+                const text = `🎓 Placement Prediction: ${latestResult.placement_status} with ${latestResult.probability}% probability!`;
+                if (navigator.share) {
+                    navigator.share({ title: 'Placement Result', text: text });
+                } else {
+                    navigator.clipboard.writeText(text);
+                    alert('Result copied to clipboard!');
+                }
+            } else {
+                alert('Make a prediction first!');
+            }
+        }
+        
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('resultModal')) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

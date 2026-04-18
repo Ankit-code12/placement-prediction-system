@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Placement Predictor Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+        }
+        
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #1e3c72 !important;
+        }
+        
+        .nav-link {
+            color: #555 !important;
+            font-weight: 500;
+        }
+        
+        .nav-link:hover {
+            color: #1e3c72 !important;
+        }
+        
+        .about-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 80px auto 40px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+        
+        .feature-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.3s;
+            height: 100%;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            font-size: 45px;
+            color: #1e3c72;
+            margin-bottom: 15px;
+        }
+        
+        .tech-stack {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #1e3c72;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .welcome-card {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .btn-predict {
+            background: #1e3c72;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        
+        .btn-predict:hover {
+            background: #2a5298;
+            transform: translateY(-2px);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+<nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-graduation-cap"></i> Placement Predictor
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/home/"><i class="fas fa-home"></i> Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/about/"><i class="fas fa-info-circle"></i> About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/compare/"><i class="fas fa-balance-scale"></i> Compare</a>
+                </li>
+                
+                <!-- Export Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="exportDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-download"></i> Export
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                        <li><a class="dropdown-item" href="/download-report/">
+                            <i class="fas fa-file-pdf"></i> Download PDF Report
+                        </a></li>
+                        <li><a class="dropdown-item" href="/export-excel/">
+                            <i class="fas fa-file-excel"></i> Export to Excel
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="shareCurrentResult()">
+                            <i class="fas fa-share-alt"></i> Share Results
+                        </a></li>
+                    </ul>
+                </li>
+                
+                <!-- Fixed Logout Button -->
+                <li class="nav-item">
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link btn btn-link" style="background: none; border: none; cursor: pointer; display: inline; padding: 8px 16px;">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+    
+    <div class="container">
+        <div class="about-container">
+            <div class="welcome-card">
+                <h2><i class="fas fa-hand-wave"></i> Welcome {{ user.username }}!</h2>
+                <p>Get AI-powered placement predictions and personalized career guidance</p>
+            </div>
+            
+            <h3 class="text-center mb-4">About Placement Predictor</h3>
+            <p class="text-center lead mb-5">An intelligent system that helps students predict their placement chances using Machine Learning</p>
+            
+            <div class="row mb-5">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-robot feature-icon"></i>
+                        <h5>Machine Learning Model</h5>
+                        <p>Logistic Regression algorithm trained on 215+ real student records</p>
+                        <small class="text-muted">95% Accuracy</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-chart-line feature-icon"></i>
+                        <h5>15+ Analysis Factors</h5>
+                        <p>Academic performance, skills, internships, work experience & more</p>
+                        <small class="text-muted">Comprehensive evaluation</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-lightbulb feature-icon"></i>
+                        <h5>Smart Recommendations</h5>
+                        <p>Personalized suggestions to improve your placement chances</p>
+                        <small class="text-muted">Actionable insights</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <i class="fas fa-chart-pie feature-icon"></i>
+                        <h5>Analytics Dashboard</h5>
+                        <p>Track placement statistics and trends in real-time</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <i class="fas fa-balance-scale feature-icon"></i>
+                        <h5>Compare Students</h5>
+                        <p>Compare profiles to identify strengths and weaknesses</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5">
+                <h5>Technologies Used</h5>
+                <div class="mt-3">
+                    <span class="tech-stack">Django</span>
+                    <span class="tech-stack">Python</span>
+                    <span class="tech-stack">Scikit-learn</span>
+                    <span class="tech-stack">Pandas</span>
+                    <span class="tech-stack">NumPy</span>
+                    <span class="tech-stack">Bootstrap 5</span>
+                    <span class="tech-stack">Chart.js</span>
+                    <span class="tech-stack">AJAX</span>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5">
+                <a href="/home/" class="btn-predict">
+                    <i class="fas fa-arrow-right"></i> Start Predicting
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

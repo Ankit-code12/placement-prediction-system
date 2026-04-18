@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Students - Placement Predictor Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .compare-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin: 100px auto 50px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .student-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .vs-badge {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .winner-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .progress-bar-custom {
+            height: 8px;
+            border-radius: 10px;
+            background: #e0e0e0;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 1s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+<nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-graduation-cap"></i> Placement Predictor
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/home/"><i class="fas fa-home"></i> Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/about/"><i class="fas fa-info-circle"></i> About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/compare/"><i class="fas fa-balance-scale"></i> Compare</a>
+                </li>
+                
+                <!-- Export Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="exportDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-download"></i> Export
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                        <li><a class="dropdown-item" href="/download-report/">
+                            <i class="fas fa-file-pdf"></i> Download PDF Report
+                        </a></li>
+                        <li><a class="dropdown-item" href="/export-excel/">
+                            <i class="fas fa-file-excel"></i> Export to Excel
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="shareCurrentResult()">
+                            <i class="fas fa-share-alt"></i> Share Results
+                        </a></li>
+                    </ul>
+                </li>
+                
+                <!-- Fixed Logout Button -->
+                <li class="nav-item">
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link btn btn-link" style="background: none; border: none; cursor: pointer; display: inline; padding: 8px 16px;">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+    
+    <div class="container">
+        <div class="compare-container">
+            <h1 class="text-center mb-4">Compare Student Profiles</h1>
+            
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="student-card">
+                        <h4><i class="fas fa-user-graduate"></i> Student 1</h4>
+                        <div class="form-group mb-3">
+                            <label>Degree Percentage</label>
+                            <input type="number" id="s1_degree" class="form-control" step="0.01" placeholder="e.g., 65.0">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Final Year Percentage</label>
+                            <input type="number" id="s1_final" class="form-control" step="0.01" placeholder="e.g., 60.0">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Skill Score</label>
+                            <input type="number" id="s1_skill" class="form-control" step="1" placeholder="e.g., 75">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>E-Test Score</label>
+                            <input type="number" id="s1_etest" class="form-control" step="0.01" placeholder="e.g., 70.0">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Internships</label>
+                            <input type="number" id="s1_internship" class="form-control" placeholder="e.g., 1">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Work Experience</label>
+                            <select id="s1_workex" class="form-select">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="vs-badge">
+                        <h2>VS</h2>
+                    </div>
+                </div>
+                
+                <div class="col-md-5">
+                    <div class="student-card">
+                        <h4><i class="fas fa-user-graduate"></i> Student 2</h4>
+                        <div class="form-group mb-3">
+                            <label>Degree Percentage</label>
+                            <input type="number" id="s2_degree" class="form-control" step="0.01" placeholder="e.g., 75.0">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Final Year Percentage</label>
+                            <input type="number" id="s2_final" class="form-control" step="0.01" placeholder="e.g., 70.0">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Skill Score</label>
+                            <input type="number" id="s2_skill" class="form-control" step="1" placeholder="e.g., 85">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>E-Test Score</label>
+                            <input type="number" id="s2_etest" class="form-control" step="0.01" placeholder="e.g., 80.0">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Internships</label>
+                            <input type="number" id="s2_internship" class="form-control" placeholder="e.g., 2">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label>Work Experience</label>
+                            <select id="s2_workex" class="form-select">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <button class="btn btn-primary btn-lg" onclick="compareStudents()">
+                    <i class="fas fa-balance-scale"></i> Compare Now
+                </button>
+            </div>
+            
+            <div id="resultArea" style="display: none; margin-top: 40px;">
+                <h3 class="text-center">Comparison Results</h3>
+                <div class="row mt-4">
+                    <div class="col-md-5" id="student1Result"></div>
+                    <div class="col-md-2"></div>
+                    <div class="col-md-5" id="student2Result"></div>
+                </div>
+                <div class="text-center mt-4" id="winnerMsg"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function compareStudents() {
+            const student1 = {
+                degree_p: document.getElementById('s1_degree').value,
+                final_year_p: document.getElementById('s1_final').value,
+                skill_score: document.getElementById('s1_skill').value,
+                etest_p: document.getElementById('s1_etest').value,
+                internship: document.getElementById('s1_internship').value,
+                workex: document.getElementById('s1_workex').value
+            };
+            
+            const student2 = {
+                degree_p: document.getElementById('s2_degree').value,
+                final_year_p: document.getElementById('s2_final').value,
+                skill_score: document.getElementById('s2_skill').value,
+                etest_p: document.getElementById('s2_etest').value,
+                internship: document.getElementById('s2_internship').value,
+                workex: document.getElementById('s2_workex').value
+            };
+            
+            const response = await fetch('/compare/api/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ student1, student2 })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                displayResults(data);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        }
+        
+        function displayResults(data) {
+            // Display Student 1 Results
+            document.getElementById('student1Result').innerHTML = `
+                <div class="student-card">
+                    <h4>Student 1 Score: ${data.student1_score}</h4>
+                    <div class="progress-bar-custom">
+                        <div class="progress-fill" style="width: ${(data.student1_score/100)*100}%"></div>
+                    </div>
+                    <p>📚 Academic: ${data.student1_breakdown.academic}</p>
+                    <p>💡 Skills: ${data.student1_breakdown.skills}</p>
+                    <p>💼 Experience: ${data.student1_breakdown.experience}</p>
+                </div>
+            `;
+            
+            // Display Student 2 Results
+            document.getElementById('student2Result').innerHTML = `
+                <div class="student-card">
+                    <h4>Student 2 Score: ${data.student2_score}</h4>
+                    <div class="progress-bar-custom">
+                        <div class="progress-fill" style="width: ${(data.student2_score/100)*100}%"></div>
+                    </div>
+                    <p>📚 Academic: ${data.student2_breakdown.academic}</p>
+                    <p>💡 Skills: ${data.student2_breakdown.skills}</p>
+                    <p>💼 Experience: ${data.student2_breakdown.experience}</p>
+                </div>
+            `;
+            
+            // Display Winner
+            document.getElementById('winnerMsg').innerHTML = `
+                <div class="winner-badge">
+                    <i class="fas fa-trophy"></i> ${data.winner} Wins by ${data.difference} points!
+                </div>
+            `;
+            
+            document.getElementById('resultArea').style.display = 'block';
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Placement Predictor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fb;
+        }
+        
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #1e3c72 !important;
+        }
+        
+        .nav-link {
+            color: #555 !important;
+        }
+        
+        .nav-link:hover {
+            color: #1e3c72 !important;
+        }
+        
+        .dashboard-container {
+            margin-top: 80px;
+            padding: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .stat-icon {
+            font-size: 35px;
+            color: #1e3c72;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .badge-placed {
+            background: #d4edda;
+            color: #155724;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .badge-not-placed {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+<nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-graduation-cap"></i> Placement Predictor
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/home/"><i class="fas fa-home"></i> Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/about/"><i class="fas fa-info-circle"></i> About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/compare/"><i class="fas fa-balance-scale"></i> Compare</a>
+                </li>
+                
+                <!-- Export Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="exportDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-download"></i> Export
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                        <li><a class="dropdown-item" href="/download-report/">
+                            <i class="fas fa-file-pdf"></i> Download PDF Report
+                        </a></li>
+                        <li><a class="dropdown-item" href="/export-excel/">
+                            <i class="fas fa-file-excel"></i> Export to Excel
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="shareCurrentResult()">
+                            <i class="fas fa-share-alt"></i> Share Results
+                        </a></li>
+                    </ul>
+                </li>
+                
+                <!-- Fixed Logout Button -->
+                <li class="nav-item">
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link btn btn-link" style="background: none; border: none; cursor: pointer; display: inline; padding: 8px 16px;">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+    
+    <div class="container dashboard-container">
+        <h3 class="mb-4" style="color: #1e3c72;">
+            <i class="fas fa-chart-line"></i> Analytics Dashboard
+        </h3>
+        
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <i class="fas fa-users stat-icon"></i>
+                    <div class="stat-value">{{ total_predictions }}</div>
+                    <div class="stat-label">Total Predictions</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <i class="fas fa-check-circle stat-icon" style="color: #28a745;"></i>
+                    <div class="stat-value">{{ placed_count }}</div>
+                    <div class="stat-label">Students Placed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <i class="fas fa-chart-line stat-icon"></i>
+                    <div class="stat-value">{{ placement_rate|floatformat:1 }}%</div>
+                    <div class="stat-label">Placement Rate</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <i class="fas fa-brain stat-icon"></i>
+                    <div class="stat-value">{{ avg_skill_score|floatformat:1 }}</div>
+                    <div class="stat-label">Avg Skill Score</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <canvas id="placementChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <canvas id="trendChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <h5 class="mb-3"><i class="fas fa-history"></i> Recent Predictions</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Probability</th>
+                            <th>Skill Score</th>
+                            <th>CGPA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pred in recent_predictions %}
+                        <tr>
+                            <td>{{ pred.timestamp }}</td>
+                            <td>
+                                <span class="{% if pred.status == 'Placed' %}badge-placed{% else %}badge-not-placed{% endif %}">
+                                    {{ pred.status }}
+                                </span>
+                            </td>
+                            <td>{{ pred.probability }}%</td>
+                            <td>{{ pred.skill_score }}</td>
+                            <td>{{ pred.cgpa }}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No predictions yet. Make your first prediction!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Placement Chart
+        const placedCount = {{ placed_count }};
+        const notPlacedCount = {{ total_predictions }} - placedCount;
+        
+        const ctx1 = document.getElementById('placementChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['Placed', 'Not Placed'],
+                datasets: [{
+                    data: [placedCount, notPlacedCount],
+                    backgroundColor: ['#28a745', '#dc3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Placement Statistics'
+                    }
+                }
+            }
+        });
+        
+        // Trend Chart
+        const ctx2 = document.getElementById('trendChart').getContext('2d');
+        const recentData = {{ recent_predictions|slice:":5"|safe }};
+        const labels = recentData.map((item, index) => `Prediction ${index + 1}`);
+        const probabilities = recentData.map(item => item.probability);
+        
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: labels.length ? labels : ['No Data'],
+                datasets: [{
+                    label: 'Success Probability (%)',
+                    data: probabilities.length ? probabilities : [0],
+                    borderColor: '#1e3c72',
+                    backgroundColor: 'rgba(30, 60, 114, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Recent Prediction Trends'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Probability (%)'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

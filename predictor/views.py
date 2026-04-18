@@ -1,5 +1,5 @@
 import warnings
-warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore')
 import os
 import pickle
 import numpy as np
@@ -13,6 +13,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import User
 from django.db.models import Count, Avg
+from django.core.mail import send_mail
+from django.conf import settings
 import json
 from datetime import datetime
 import io
@@ -50,95 +52,43 @@ scaler_path = os.path.join(BASE_DIR, 'predictor', 'scaler.pkl')
 model = pickle.load(open(model_path, 'rb'))
 scaler = pickle.load(open(scaler_path, 'rb'))
 
+# ==================== COMPANY CRITERIA ====================
+COMPANY_CRITERIA = {
+    'Google': {'min_cgpa': 8.5, 'min_skill': 85, 'min_aptitude': 85, 'icon': 'fab fa-google', 'color': '#4285f4'},
+    'Microsoft': {'min_cgpa': 8.0, 'min_skill': 82, 'min_aptitude': 80, 'icon': 'fab fa-microsoft', 'color': '#f25022'},
+    'Amazon': {'min_cgpa': 7.5, 'min_skill': 78, 'min_aptitude': 75, 'icon': 'fab fa-amazon', 'color': '#ff9900'},
+    'TCS': {'min_cgpa': 6.5, 'min_skill': 70, 'min_aptitude': 65, 'icon': 'fas fa-building', 'color': '#0077b6'},
+    'Infosys': {'min_cgpa': 6.0, 'min_skill': 65, 'min_aptitude': 60, 'icon': 'fas fa-chart-line', 'color': '#cc0000'},
+    'Wipro': {'min_cgpa': 6.0, 'min_skill': 60, 'min_aptitude': 60, 'icon': 'fas fa-laptop-code', 'color': '#6c3483'},
+}
+
 # ==================== JOBS DATABASE ====================
 JOBS_DATABASE = [
-    {
-        'title': 'Software Engineer',
-        'company': 'Google',
-        'min_cgpa': 8.0,
-        'min_skill': 85,
-        'salary': '25-35 LPA',
-        'location': 'Bangalore',
-        'skills': ['Python', 'DSA', 'System Design', 'Problem Solving'],
-        'logo': 'fab fa-google'
-    },
-    {
-        'title': 'Data Scientist',
-        'company': 'Microsoft',
-        'min_cgpa': 7.5,
-        'min_skill': 80,
-        'salary': '20-30 LPA',
-        'location': 'Hyderabad',
-        'skills': ['Python', 'Machine Learning', 'Statistics', 'SQL'],
-        'logo': 'fab fa-microsoft'
-    },
-    {
-        'title': 'Full Stack Developer',
-        'company': 'Amazon',
-        'min_cgpa': 7.0,
-        'min_skill': 78,
-        'salary': '18-25 LPA',
-        'location': 'Chennai',
-        'skills': ['React', 'Node.js', 'MongoDB', 'AWS'],
-        'logo': 'fab fa-amazon'
-    },
-    {
-        'title': 'Business Analyst',
-        'company': 'Deloitte',
-        'min_cgpa': 6.5,
-        'min_skill': 70,
-        'salary': '8-12 LPA',
-        'location': 'Mumbai',
-        'skills': ['Excel', 'SQL', 'Communication', 'Tableau'],
-        'logo': 'fas fa-chart-line'
-    },
-    {
-        'title': 'Software Developer',
-        'company': 'Infosys',
-        'min_cgpa': 6.0,
-        'min_skill': 65,
-        'salary': '6-10 LPA',
-        'location': 'Pune',
-        'skills': ['Java', 'Spring Boot', 'SQL'],
-        'logo': 'fas fa-code'
-    },
-    {
-        'title': 'Web Developer',
-        'company': 'TCS',
-        'min_cgpa': 6.0,
-        'min_skill': 60,
-        'salary': '5-8 LPA',
-        'location': 'Multiple',
-        'skills': ['HTML/CSS', 'JavaScript', 'React'],
-        'logo': 'fas fa-globe'
-    },
-    {
-        'title': 'Data Analyst',
-        'company': 'Accenture',
-        'min_cgpa': 6.5,
-        'min_skill': 72,
-        'salary': '7-11 LPA',
-        'location': 'Bangalore',
-        'skills': ['Python', 'Pandas', 'Power BI', 'Statistics'],
-        'logo': 'fas fa-database'
-    },
-    {
-        'title': 'DevOps Engineer',
-        'company': 'IBM',
-        'min_cgpa': 7.0,
-        'min_skill': 75,
-        'salary': '10-15 LPA',
-        'location': 'Pune',
-        'skills': ['Docker', 'Kubernetes', 'Jenkins', 'AWS'],
-        'logo': 'fab fa-ibm'
-    }
+    {'title': 'Software Engineer', 'company': 'Google', 'min_cgpa': 8.0, 'min_skill': 85, 'salary': '25-35 LPA', 'location': 'Bangalore', 'skills': ['Python', 'DSA', 'System Design'], 'logo': 'fab fa-google'},
+    {'title': 'Data Scientist', 'company': 'Microsoft', 'min_cgpa': 7.5, 'min_skill': 80, 'salary': '20-30 LPA', 'location': 'Hyderabad', 'skills': ['Python', 'ML', 'Statistics'], 'logo': 'fab fa-microsoft'},
+    {'title': 'Full Stack Developer', 'company': 'Amazon', 'min_cgpa': 7.0, 'min_skill': 78, 'salary': '18-25 LPA', 'location': 'Chennai', 'skills': ['React', 'Node.js', 'AWS'], 'logo': 'fab fa-amazon'},
+    {'title': 'Business Analyst', 'company': 'Deloitte', 'min_cgpa': 6.5, 'min_skill': 70, 'salary': '8-12 LPA', 'location': 'Mumbai', 'skills': ['Excel', 'SQL', 'Tableau'], 'logo': 'fas fa-chart-line'},
+    {'title': 'Software Developer', 'company': 'Infosys', 'min_cgpa': 6.0, 'min_skill': 65, 'salary': '6-10 LPA', 'location': 'Pune', 'skills': ['Java', 'Spring Boot', 'SQL'], 'logo': 'fas fa-code'},
+    {'title': 'Web Developer', 'company': 'TCS', 'min_cgpa': 6.0, 'min_skill': 60, 'salary': '5-8 LPA', 'location': 'Multiple', 'skills': ['HTML/CSS', 'JavaScript', 'React'], 'logo': 'fas fa-globe'},
 ]
 
 # ==================== AUTHENTICATION VIEWS ====================
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('about')
+        return redirect('home')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            return redirect('home')
+        else:
+            messages.error(request, 'Invalid username or password!')
+    
     return render(request, 'login.html')
 
 def register_view(request):
@@ -147,6 +97,11 @@ def register_view(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
+        
+        # Validation
+        if not username or not email or not password:
+            messages.error(request, 'All fields are required!')
+            return render(request, 'register.html')
         
         if password != confirm_password:
             messages.error(request, 'Passwords do not match!')
@@ -160,12 +115,21 @@ def register_view(request):
             messages.error(request, 'Email already registered!')
             return render(request, 'register.html')
         
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.save()
-        messages.success(request, 'Account created successfully! Please login.')
-        return redirect('login')
+        # Create user
+        try:
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.save()
+            messages.success(request, 'Account created successfully! Please login.')
+            return redirect('login')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+            return render(request, 'register.html')
     
     return render(request, 'register.html')
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
 
 # ==================== MAIN PAGE VIEWS ====================
 
@@ -179,7 +143,6 @@ def about(request):
 
 @login_required(login_url='login')
 def dashboard(request):
-    # Get all predictions from database
     if MODELS_AVAILABLE:
         all_predictions = Prediction.objects.all()
         total_predictions = all_predictions.count()
@@ -195,8 +158,6 @@ def dashboard(request):
             avg_probability = 0
         
         recent_predictions = all_predictions.order_by('-timestamp')[:10]
-        
-        # Convert to list of dicts for template
         recent_list = []
         for pred in recent_predictions:
             recent_list.append({
@@ -207,7 +168,6 @@ def dashboard(request):
                 'cgpa': pred.cgpa
             })
     else:
-        # Fallback to session/history if database not available
         total_predictions = 0
         placed_count = 0
         placement_rate = 0
@@ -221,7 +181,8 @@ def dashboard(request):
         'placement_rate': round(placement_rate, 1),
         'avg_skill_score': round(avg_skill_score, 1),
         'avg_probability': round(avg_probability, 1),
-        'recent_predictions': recent_list
+        'recent_predictions': recent_list,
+        'company_criteria': COMPANY_CRITERIA,
     }
     
     return render(request, 'dashboard.html', stats)
@@ -233,12 +194,9 @@ def profile(request):
         total = user_predictions.count()
         placed = user_predictions.filter(status='Placed').count()
         placement_rate = (placed/total*100) if total > 0 else 0
-        
-        # Get statistics
         avg_skill = user_predictions.aggregate(Avg('skill_score'))['skill_score__avg'] or 0
         avg_prob = user_predictions.aggregate(Avg('probability'))['probability__avg'] or 0
         
-        # Get latest prediction for job recommendations
         latest_pred = user_predictions.first()
         if latest_pred:
             job_recommendations = get_job_recommendations(latest_pred.cgpa, latest_pred.skill_score, latest_pred.course)
@@ -267,89 +225,124 @@ def profile(request):
     
     return render(request, 'profile.html', context)
 
+@login_required(login_url='login')
+def change_password(request):
+    if request.method == 'POST':
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if new_password != confirm_password:
+            messages.error(request, 'New passwords do not match!')
+            return render(request, 'change_password.html')
+        
+        if request.user.check_password(old_password):
+            request.user.set_password(new_password)
+            request.user.save()
+            messages.success(request, 'Password changed! Please login again.')
+            return redirect('login')
+        else:
+            messages.error(request, 'Old password is incorrect!')
+    
+    return render(request, 'change_password.html')
+
 # ==================== JOB RECOMMENDATION FUNCTION ====================
 
 def get_job_recommendations(cgpa, skill_score, course):
-    """Get job recommendations based on student profile"""
     recommended = []
-    
     for job in JOBS_DATABASE:
         if cgpa >= job['min_cgpa'] and skill_score >= job['min_skill']:
             job_copy = job.copy()
-            # Calculate match percentage
-            match = 0
+            match = 50
             if cgpa >= job['min_cgpa'] + 1:
                 match += 20
             elif cgpa >= job['min_cgpa']:
                 match += 10
-            
             if skill_score >= job['min_skill'] + 15:
                 match += 20
             elif skill_score >= job['min_skill']:
                 match += 10
-            
-            job_copy['match_percentage'] = min(95, 50 + match)
+            job_copy['match_percentage'] = min(95, match)
             recommended.append(job_copy)
     
-    # Sort by match percentage
     recommended.sort(key=lambda x: x['match_percentage'], reverse=True)
     return recommended[:5]
 
-# ==================== PREDICTION API ====================
+# ==================== PREDICTION HELPER FUNCTIONS ====================
 
 def generate_recommendations(cgpa, aptitude, skill, internship, workex, probability):
     recommendations = []
     
     if cgpa < 6.0:
-        recommendations.append("📚 Improve your CGPA - focus on core subjects and maintain consistency")
+        recommendations.append("📚 Improve your CGPA - focus on core subjects")
     elif cgpa < 7.0:
-        recommendations.append("📖 Your CGPA is good, but aim for above 7.5 for better opportunities")
+        recommendations.append("📖 Your CGPA is good, aim for above 7.5")
     elif cgpa >= 8.0:
         recommendations.append("🎓 Excellent CGPA! Highlight this in your resume")
     
     if aptitude < 60:
-        recommendations.append("🧠 Practice aptitude tests daily - use platforms like Indiabix, PrepInsta")
+        recommendations.append("🧠 Practice aptitude tests daily")
     elif aptitude < 75:
-        recommendations.append("📊 Your aptitude is decent, practice more complex problems and time management")
+        recommendations.append("📊 Practice more complex aptitude problems")
     else:
-        recommendations.append("🎯 Great aptitude score! Focus on speed and accuracy")
+        recommendations.append("🎯 Great aptitude score! Focus on speed")
     
     if skill < 70:
-        recommendations.append("💻 Enhance technical skills - take online courses on Coursera/Udemy")
+        recommendations.append("💻 Take online courses to enhance skills")
     elif skill < 85:
-        recommendations.append("🚀 Good skills! Build projects to showcase your expertise")
+        recommendations.append("🚀 Build projects to showcase your skills")
     else:
-        recommendations.append("⭐ Outstanding skills! Consider contributing to open source")
+        recommendations.append("⭐ Outstanding skills! Contribute to open source")
     
     if internship == 0:
-        recommendations.append("🏢 Apply for internships - practical experience increases chances by 40%")
+        recommendations.append("🏢 Apply for internships immediately")
     elif internship < 2:
-        recommendations.append("💼 Great start! Try to get one more internship")
-    else:
-        recommendations.append("🌟 Multiple internships will boost your resume significantly")
+        recommendations.append("💼 Try to get one more internship")
     
     if workex == 'No':
-        recommendations.append("📝 Fresher? Focus on projects and certifications")
-    else:
-        recommendations.append("💪 Your work experience is valuable - quantify achievements")
+        recommendations.append("📝 Focus on projects and certifications")
     
     if probability < 40:
-        recommendations.append("⚠️ Consider higher studies or skill development courses to improve chances")
-        recommendations.append("🎯 Apply to startups and smaller companies first")
+        recommendations.append("⚠️ Consider skill development courses")
     elif probability < 70:
-        recommendations.append("🎯 Moderate chances - apply to multiple companies and prepare well for interviews")
-        recommendations.append("📢 Network on LinkedIn and attend placement workshops")
+        recommendations.append("🎯 Apply to multiple companies")
     else:
-        recommendations.append("✨ Excellent chances! Focus on interview preparation and salary negotiation")
-        recommendations.append("🏆 Target top companies and prepare for competitive exams")
+        recommendations.append("✨ Excellent chances! Focus on interviews")
     
-    # Remove duplicates
-    unique_recs = []
-    for rec in recommendations:
-        if rec not in unique_recs:
-            unique_recs.append(rec)
+    return list(dict.fromkeys(recommendations))[:5]
+
+def get_company_predictions(cgpa, skill_score, aptitude):
+    company_predictions = []
+    for company, criteria in COMPANY_CRITERIA.items():
+        chance = 0
+        if cgpa >= criteria['min_cgpa']:
+            chance += 40
+        if skill_score >= criteria['min_skill']:
+            chance += 35
+        if aptitude >= criteria['min_aptitude']:
+            chance += 25
+        
+        if chance >= 70:
+            status = "High Chance"
+            color = "#28a745"
+        elif chance >= 40:
+            status = "Moderate Chance"
+            color = "#ffc107"
+        else:
+            status = "Low Chance"
+            color = "#dc3545"
+        
+        company_predictions.append({
+            'name': company,
+            'chance': chance,
+            'status': status,
+            'color': color,
+            'icon': criteria['icon'],
+        })
     
-    return unique_recs[:6]
+    return sorted(company_predictions, key=lambda x: x['chance'], reverse=True)
+
+# ==================== PREDICTION API ====================
 
 @login_required(login_url='login')
 @csrf_exempt
@@ -358,7 +351,6 @@ def predict_api(request):
     try:
         data = json.loads(request.body)
         
-        # Extract all features
         gender = data.get('gender')
         hs_p = float(data.get('hs_p'))
         hs_b = data.get('hs_b')
@@ -389,7 +381,6 @@ def predict_api(request):
             'Clinical Research': 7, 'HR': 8, 'CSE': 9, 'IT': 10
         }
         
-        # Create input DataFrame
         input_data = pd.DataFrame([{
             'gender': gender_map.get(gender, 0),
             'hs p': hs_p,
@@ -408,32 +399,29 @@ def predict_api(request):
             'internship': internship
         }])
         
-        # Scale and predict
         features_scaled = scaler.transform(input_data)
         prediction = model.predict(features_scaled)
-        probability = model.predict_proba(features_scaled)[0][1]
+        probability = model.predict_proba(features_scaled)[0][1] * 100
         
-        # Generate recommendations
-        recommendations = generate_recommendations(
-            degree_p, etest_p, skill_score, internship, workex, probability
-        )
+        recommendations = generate_recommendations(degree_p, etest_p, skill_score, internship, workex, probability)
+        company_predictions = get_company_predictions(degree_p, skill_score, etest_p)
         
         result = {
             'success': True,
             'placement_status': 'Placed' if prediction[0] == 1 else 'Not Placed',
-            'probability': round(probability * 100, 2),
+            'probability': round(probability, 2),
             'recommendations': recommendations,
+            'company_predictions': company_predictions,
             'student_data': {
                 'cgpa': degree_p,
                 'aptitude_score': etest_p,
                 'skill_score': skill_score,
                 'internship': internship,
                 'work_experience': workex,
-                'final_year_percentage': final_year_p
             }
         }
         
-        # Save to database if models are available
+        # Save to database
         if MODELS_AVAILABLE:
             try:
                 Prediction.objects.create(
@@ -457,9 +445,21 @@ def predict_api(request):
                     course_specialization=course_specialization,
                     internship=internship
                 )
-                print(f"Prediction saved for user: {request.user.username}")
             except Exception as e:
-                print(f"Error saving to database: {e}")
+                print(f"DB Error: {e}")
+        
+        # Send email (optional)
+        try:
+            if request.user.email:
+                send_mail(
+                    f'Placement Prediction Result - {result["placement_status"]}',
+                    f'Hello {request.user.username},\n\nYour placement prediction:\nStatus: {result["placement_status"]}\nProbability: {result["probability"]}%\n\nBest regards,\nPlacement Predictor',
+                    settings.EMAIL_HOST_USER if hasattr(settings, 'EMAIL_HOST_USER') else 'noreply@placement.com',
+                    [request.user.email],
+                    fail_silently=True,
+                )
+        except:
+            pass
         
         return JsonResponse(result)
         
@@ -483,210 +483,126 @@ def compare_api(request):
         student1 = data.get('student1', {})
         student2 = data.get('student2', {})
         
-        score1 = calculate_success_score(student1)
-        score2 = calculate_success_score(student2)
-        breakdown1 = get_score_breakdown(student1)
-        breakdown2 = get_score_breakdown(student2)
+        def calc_score(s):
+            score = float(s.get('degree_p', 0)) * 0.4
+            score += float(s.get('skill_score', 0)) * 0.4
+            score += int(s.get('internship', 0)) * 10
+            if s.get('workex') == 'Yes':
+                score += 10
+            return round(score, 2)
+        
+        score1 = calc_score(student1)
+        score2 = calc_score(student2)
         
         return JsonResponse({
             'success': True,
             'student1_score': score1,
             'student2_score': score2,
-            'student1_breakdown': breakdown1,
-            'student2_breakdown': breakdown2,
             'winner': 'Student 1' if score1 > score2 else 'Student 2',
             'difference': abs(score1 - score2)
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
-def calculate_success_score(data):
-    try:
-        score = 0
-        score += float(data.get('degree_p', 0)) * 0.25
-        score += float(data.get('final_year_p', 0)) * 0.15
-        score += float(data.get('skill_score', 0)) * 0.25
-        score += float(data.get('etest_p', 0)) * 0.05
-        score += int(data.get('internship', 0)) * 3
-        if data.get('workex') == 'Yes':
-            score += 10
-        return round(score, 2)
-    except:
-        return 0
-
-def get_score_breakdown(data):
-    try:
-        academic = (float(data.get('degree_p', 0)) * 0.25 + float(data.get('final_year_p', 0)) * 0.15)
-        skills = (float(data.get('skill_score', 0)) * 0.25 + float(data.get('etest_p', 0)) * 0.05)
-        experience = (int(data.get('internship', 0)) * 3 + (10 if data.get('workex') == 'Yes' else 0))
-        
-        return {
-            'academic': round(academic, 2),
-            'skills': round(skills, 2),
-            'experience': round(experience, 2),
-            'total': round(academic + skills + experience, 2)
-        }
-    except:
-        return {'academic': 0, 'skills': 0, 'experience': 0, 'total': 0}
-
 # ==================== EXPORT FEATURES ====================
 
 @login_required(login_url='login')
 def download_report(request):
-    """Generate and download PDF report"""
     if not REPORTLAB_AVAILABLE:
-        return HttpResponse("ReportLab not installed. Run: pip install reportlab", status=400)
+        return HttpResponse("ReportLab not installed", status=400)
     
     try:
         buffer = io.BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
         
-        # Header
         p.setFillColor(HexColor('#1e3c72'))
         p.rect(0, height - 80, width, 80, fill=True)
         p.setFillColor(HexColor('#ffffff'))
         p.setFont("Helvetica-Bold", 24)
         p.drawString(50, height - 50, "Placement Prediction Report")
         
-        # Student Info
         p.setFillColor(HexColor('#000000'))
         p.setFont("Helvetica", 12)
-        p.drawString(50, height - 120, f"Student Name: {request.user.username}")
-        p.drawString(50, height - 140, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        p.drawString(50, height - 160, f"Email: {request.user.email if request.user.email else 'Not provided'}")
+        p.drawString(50, height - 120, f"Student: {request.user.username}")
+        p.drawString(50, height - 140, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
-        # Get last prediction from database
         if MODELS_AVAILABLE:
             last_pred = Prediction.objects.filter(user=request.user).order_by('-timestamp').first()
             if last_pred:
-                y_position = height - 220
+                y = height - 200
                 p.setFont("Helvetica-Bold", 14)
-                p.drawString(50, y_position, "Latest Prediction Result:")
-                y_position -= 30
-                
+                p.drawString(50, y, "Latest Prediction:")
+                y -= 30
                 p.setFont("Helvetica", 12)
-                p.drawString(50, y_position, f"Status: {last_pred.status}")
-                y_position -= 25
-                p.drawString(50, y_position, f"Success Probability: {last_pred.probability}%")
-                y_position -= 25
-                p.drawString(50, y_position, f"Skill Score: {last_pred.skill_score}/100")
-                y_position -= 25
-                p.drawString(50, y_position, f"CGPA: {last_pred.cgpa}%")
-                
-                # Recommendations
-                y_position -= 50
-                p.setFont("Helvetica-Bold", 12)
-                p.drawString(50, y_position, "Recommendations:")
-                y_position -= 25
-                p.setFont("Helvetica", 10)
-                
-                recs = generate_recommendations(
-                    last_pred.cgpa, last_pred.etest_percentage, last_pred.skill_score,
-                    last_pred.internship, last_pred.work_experience, last_pred.probability
-                )
-                
-                for rec in recs[:4]:
-                    if y_position > 50:
-                        p.drawString(50, y_position, rec)
-                        y_position -= 20
+                p.drawString(50, y, f"Status: {last_pred.status}")
+                y -= 25
+                p.drawString(50, y, f"Probability: {last_pred.probability}%")
+                y -= 25
+                p.drawString(50, y, f"Skill Score: {last_pred.skill_score}")
             else:
-                p.drawString(50, height - 200, "No predictions found. Make a prediction first!")
-        else:
-            p.drawString(50, height - 200, "No predictions found. Make a prediction first!")
-        
-        # Footer
-        p.setFont("Helvetica", 8)
-        p.setFillColor(HexColor('#666666'))
-        p.drawString(50, 50, "Generated by Placement Prediction System")
-        p.drawString(50, 35, "© 2024 - AI-Powered Career Guidance")
+                p.drawString(50, height - 200, "No predictions found")
         
         p.save()
-        
         buffer.seek(0)
         response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="placement_report.pdf"'
+        response['Content-Disposition'] = 'attachment; filename="report.pdf"'
         return response
-        
     except Exception as e:
-        return HttpResponse(f"Error generating report: {str(e)}", status=400)
+        return HttpResponse(f"Error: {e}", status=400)
 
 @login_required(login_url='login')
 def export_excel(request):
-    """Export prediction history to Excel"""
     if not OPENPYXL_AVAILABLE:
-        return HttpResponse("OpenPyXL not installed. Run: pip install openpyxl", status=400)
+        return HttpResponse("OpenPyXL not installed", status=400)
     
     try:
         wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "My Predictions"
         
-        # Sheet 1: Predictions Data
-        ws1 = wb.active
-        ws1.title = "Predictions History"
-        
-        # Headers
-        headers = ['Timestamp', 'Status', 'Probability (%)', 'Skill Score', 'CGPA (%)', 'Course', 'Internships']
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="1e3c72", end_color="1e3c72", fill_type="solid")
-        
+        headers = ['Date', 'Status', 'Probability', 'Skill Score', 'CGPA', 'Course']
         for col, header in enumerate(headers, 1):
-            cell = ws1.cell(row=1, column=col, value=header)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal='center')
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="1e3c72", end_color="1e3c72", fill_type="solid")
         
-        # Add data from database
         if MODELS_AVAILABLE:
             predictions = Prediction.objects.filter(user=request.user).order_by('-timestamp')
             for row, pred in enumerate(predictions, 2):
-                ws1.cell(row=row, column=1, value=pred.timestamp.strftime("%Y-%m-%d %H:%M:%S"))
-                ws1.cell(row=row, column=2, value=pred.status)
-                ws1.cell(row=row, column=3, value=pred.probability)
-                ws1.cell(row=row, column=4, value=pred.skill_score)
-                ws1.cell(row=row, column=5, value=pred.cgpa)
-                ws1.cell(row=row, column=6, value=pred.course)
-                ws1.cell(row=row, column=7, value=pred.internship)
-        else:
-            ws1.cell(row=2, column=1, value="No predictions yet")
-        
-        # Adjust column widths
-        for column in ws1.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 30)
-            ws1.column_dimensions[column_letter].width = adjusted_width
+                ws.cell(row=row, column=1, value=pred.timestamp.strftime("%Y-%m-%d %H:%M"))
+                ws.cell(row=row, column=2, value=pred.status)
+                ws.cell(row=row, column=3, value=pred.probability)
+                ws.cell(row=row, column=4, value=pred.skill_score)
+                ws.cell(row=row, column=5, value=pred.cgpa)
+                ws.cell(row=row, column=6, value=pred.course)
         
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="my_predictions.xlsx"'
+        response['Content-Disposition'] = 'attachment; filename="predictions.xlsx"'
         wb.save(response)
         return response
-        
     except Exception as e:
-        return HttpResponse(f"Error exporting Excel: {str(e)}", status=400)
+        return HttpResponse(f"Error: {e}", status=400)
 
 @login_required(login_url='login')
 @csrf_exempt
 def share_result_api(request):
-    """API for sharing results"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             result_data = data.get('result', {})
-            
-            share_text = f"🎓 Placement Prediction Result: {result_data.get('placement_status', 'N/A')} with {result_data.get('probability', 0)}% probability! Check your chances now!"
-            
-            return JsonResponse({
-                'success': True,
-                'share_text': share_text,
-                'share_url': request.build_absolute_uri('/home/')
-            })
+            share_text = f"🎓 Placement Prediction: {result_data.get('placement_status', 'N/A')} with {result_data.get('probability', 0)}% probability!"
+            return JsonResponse({'success': True, 'share_text': share_text})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
-    
     return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+# ==================== DARK MODE ====================
+
+def set_dark_mode(request):
+    response = JsonResponse({'success': True})
+    if request.GET.get('dark') == 'true':
+        response.set_cookie('dark_mode', 'true', max_age=365*24*60*60)
+    else:
+        response.delete_cookie('dark_mode')
+    return response
